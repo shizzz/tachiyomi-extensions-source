@@ -2,8 +2,10 @@ package eu.kanade.tachiyomi.extension.zh.smallflyingrat
 
 import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
@@ -11,9 +13,11 @@ import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import rx.Observable
 import java.util.Calendar
 
 class Smallflyingrat : ParsedHttpSource(), ConfigurableSource {
@@ -57,6 +61,32 @@ class Smallflyingrat : ParsedHttpSource(), ConfigurableSource {
         return GET(builder.toString(), headers)
     }
     override fun searchMangaFromElement(element: Element) = mangaFromElement(element)
+
+    private fun searchMangaByIdRequest(id: String) = GET("$baseUrl/?s=$id&post_type=wp-manga", headers)
+
+    private fun searchMangaByIdParse(response: Response, id: String): MangasPage {
+        val details = mangaDetailsParse(response)
+        details.url = "/?s=$id&post_type=wp-manga"
+        return MangasPage(listOf(details), false)
+    }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return when {
+            query.startsWith(PREFIX_ID_SEARCH) -> {
+                val id = query.removePrefix(PREFIX_ID_SEARCH)
+                client.newCall(searchMangaByIdRequest(id))
+                    .asObservableSuccess()
+                    .map { response -> searchMangaByIdParse(response, id) }
+            }
+            query.toIntOrNull() != null -> {
+                client.newCall(searchMangaByIdRequest(query))
+                    .asObservableSuccess()
+                    .map { response -> searchMangaByIdParse(response, query) }
+            }
+            else -> super.fetchSearchManga(page, query, filters)
+        }
+    }
+
     override fun popularMangaFromElement(element: Element) = mangaFromElement(element)
     override fun latestUpdatesFromElement(element: Element) = SManga.create().apply {
         val a = element.selectFirst("h4 > a")!!
@@ -241,5 +271,6 @@ class Smallflyingrat : ParsedHttpSource(), ConfigurableSource {
         const val DEFAULT_LIST_PREF = "defaultBaseUrl"
         const val URL_LIST_PREF = "baseUrlList"
         const val URL_INDEX_PREF = "baseUrlIndex"
+        const val PREFIX_ID_SEARCH = "id:"
     }
 }
