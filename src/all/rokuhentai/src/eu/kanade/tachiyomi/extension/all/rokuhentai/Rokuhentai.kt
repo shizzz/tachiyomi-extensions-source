@@ -8,6 +8,7 @@ import eu.kanade.tachiyomi.lib.randomua.getPrefCustomUA
 import eu.kanade.tachiyomi.lib.randomua.getPrefUAType
 import eu.kanade.tachiyomi.lib.randomua.setRandomUserAgent
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.network.interceptor.rateLimit
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -173,6 +174,31 @@ class Rokuhentai(
 
     override fun searchMangaParse(response: Response) = popularMangaParse(response)
 
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        return when {
+            query.startsWith(PREFIX_ID_SEARCH) -> {
+                val id = query.removePrefix(PREFIX_ID_SEARCH)
+                client.newCall(searchMangaByIdRequest(id))
+                    .asObservableSuccess()
+                    .map { response -> searchMangaByIdParse(response, id) }
+            }
+            query.toIntOrNull() != null -> {
+                client.newCall(searchMangaByIdRequest(query))
+                    .asObservableSuccess()
+                    .map { response -> searchMangaByIdParse(response, query) }
+            }
+            else -> super.fetchSearchManga(page, query, filters)
+        }
+    }
+
+    private fun searchMangaByIdRequest(id: String) = GET("$baseUrl/q?=\"$id\"", headers)
+
+    private fun searchMangaByIdParse(response: Response, id: String): MangasPage {
+        val details = mangaDetailsParse(response)
+        details.url = "/q?=\"$id\""
+        return MangasPage(listOf(details), false)
+    }
+
     private fun Element?.parseGenres(): String {
         val genreBlocks = this?.select(".mdc-chip__text")
         val genres = genreBlocks?.mapNotNull { el -> el.text().trim() }
@@ -235,4 +261,8 @@ class Rokuhentai(
         val mangaId: String,
         val sManga: SManga,
     )
+
+    companion object {
+        const val PREFIX_ID_SEARCH = ""
+    }
 }

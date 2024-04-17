@@ -3,7 +3,7 @@
 
     <application>
         <activity
-            android:name=".all.rokuhentai.RHFactory"
+            android:name=".all.rokuhentai.RHActivity"
             android:excludeFromRecents="true"
             android:exported="true"
             android:theme="@android:style/Theme.NoDisplay">

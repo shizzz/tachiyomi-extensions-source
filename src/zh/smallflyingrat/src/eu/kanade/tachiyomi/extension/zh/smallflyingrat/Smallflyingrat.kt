@@ -271,6 +271,6 @@ class Smallflyingrat : ParsedHttpSource(), ConfigurableSource {
         const val DEFAULT_LIST_PREF = "defaultBaseUrl"
         const val URL_LIST_PREF = "baseUrlList"
         const val URL_INDEX_PREF = "baseUrlIndex"
-        const val PREFIX_ID_SEARCH = "id:"
+        const val PREFIX_ID_SEARCH = ""
     }
 }
