@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 <application>
     <activity
-        android:name=".zh.smallflyingrat.Smallflyingrat"
+        android:name=".zh.smallflyingrat.SmallflyingratActivity"
         android:label="Smallflyingrat"
         android:excludeFromRecents="true"
         android:exported="true"
